@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	githubclient "github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 
@@ -77,6 +78,26 @@ func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
 	}
 	provider := "github"
+	code := r.FormValue("code")
+	token, err := oauthConf.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
+		status = "error"
+		result = fmt.Sprintf("%s", err)
+	} else {
+		oauthClient := oauthConf.Client(oauth2.NoContext, token)
+		client := githubclient.NewClient(oauthClient)
+		user, _, err := client.Users.Get(oauth2.NoContext, "")
+		if err != nil {
+			fmt.Printf("client.Users.Get() falled with '%s'\n", err)
+			status = "error"
+			result = fmt.Sprintf("%s", err)
+		} else {
+			fmt.Printf("Logged in as github user: %s (%s)\n", *user.Login, token.AccessToken)
+			status = "success"
+			result = fmt.Sprintf(`{"token":"%s", "provider":"%s"}`, token.AccessToken, provider)
+		}
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(script, status, provider, result)))
