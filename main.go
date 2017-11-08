@@ -54,31 +54,31 @@ const (
   </script></head><body></body></html>`
 )
 
-// /
-func handleMain(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(``))
+// GET /
+func handleMain(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "text/html; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(``))
 }
 
-// /auth. Initial page redirecting
-func handleGitHubAuth(w http.ResponseWriter, r *http.Request) {
+// GET /auth  Initial page redirecting
+func handleGitHubAuth(res http.ResponseWriter, req *http.Request) {
 	url := oauthConf.AuthCodeURL(oauthStateString, oauth2.AccessTypeOnline)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 }
 
-// /callback. Called by github after authorization is granted
-func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
+// GET /callback  Called by github after authorization is granted
+func handleGitHubCallback(res http.ResponseWriter, req *http.Request) {
 	var (
 		status string
 		result string
 	)
-	state := r.FormValue("state")
+	state := req.FormValue("state")
 	if state != oauthStateString {
 		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
 	}
 	provider := "github"
-	code := r.FormValue("code")
+	code := req.FormValue("code")
 	token, err := oauthConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
@@ -98,13 +98,20 @@ func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 			result = fmt.Sprintf(`{"token":"%s", "provider":"%s"}`, token.AccessToken, provider)
 		}
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(script, status, provider, result)))
+	res.Header().Set("Content-Type", "text/html; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(fmt.Sprintf(script, status, provider, result)))
 }
 
-func handleGitHubSuccess(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(``))
+func handleRefresh(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("refresh with '%s'\n", req)
+	res.Write([]byte(""))
+}
+
+// GET /success
+func handleSuccess(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("success with '%s'\n", req)
+	res.Write([]byte(""))
 }
 
 func init() {
@@ -119,6 +126,7 @@ func main() {
 	http.HandleFunc("/auth", handleGitHubAuth)
 	http.HandleFunc("/success", handleGitHubSuccess)
 	http.HandleFunc("/callback", handleGitHubCallback)
+	//
 	fmt.Printf("Started running on %s\n", host)
 	fmt.Println(http.ListenAndServe(host, nil))
 }
