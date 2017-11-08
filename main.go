@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"os"
 
+	"golang.org/x/oauth2"
+	githuboauth "golang.org/x/oauth2/github"
+
 	"./dotenv"
 	rand "./randstr"
 )
@@ -13,6 +16,12 @@ var (
 	host = "localhost:3000"
 	// random string for oauth2 API calls to protect against CSRF
 	oauthStateString = rand.RandomString(64)
+	oauthConf        = &oauth2.Config{
+		Endpoint:     githuboauth.Endpoint,
+		Scopes:       []string{"repo", "user"},
+		ClientID:     os.Getenv("GITHUB_KEY"),
+		ClientSecret: os.Getenv("GITHUB_SECRET"),
+	}
 )
 
 const (
@@ -53,6 +62,8 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 
 // /auth. Initial page redirecting
 func handleGitHubAuth(w http.ResponseWriter, r *http.Request) {
+	url := oauthConf.AuthCodeURL(oauthStateString, oauth2.AccessTypeOnline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 // /callback. Called by github after authorization is granted
