@@ -16,5 +16,5 @@ build-linux:
 build-windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -ldflags "$(LDFLAGS)" -o bin/$(TARGET_BIN)_windows-amd64 $(SOURCE_MAIN)
 
-run:
-	./bin/$(SOURCE_MAIN)
+start:
+	go run $(SOURCE_MAIN)
