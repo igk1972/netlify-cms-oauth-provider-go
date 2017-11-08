@@ -5,24 +5,18 @@ import (
 	"net/http"
 	"os"
 
-	githubclient "github.com/google/go-github/github"
-	"golang.org/x/oauth2"
-	githuboauth "golang.org/x/oauth2/github"
+	"github.com/gorilla/pat"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/bitbucket"
+	"github.com/markbates/goth/providers/github"
+	"github.com/markbates/goth/providers/gitlab"
 
 	"./dotenv"
-	rand "./randstr"
 )
 
 var (
 	host = "localhost:3000"
-	// random string for oauth2 API calls to protect against CSRF
-	oauthStateString = rand.RandomString(64)
-	oauthConf        = &oauth2.Config{
-		Endpoint:     githuboauth.Endpoint,
-		Scopes:       []string{"repo", "user"},
-		ClientID:     os.Getenv("GITHUB_KEY"),
-		ClientSecret: os.Getenv("GITHUB_SECRET"),
-	}
 )
 
 const (
@@ -61,48 +55,44 @@ func handleMain(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(``))
 }
 
-// GET /auth  Initial page redirecting
-func handleGitHubAuth(res http.ResponseWriter, req *http.Request) {
-	url := oauthConf.AuthCodeURL(oauthStateString, oauth2.AccessTypeOnline)
+// GET /auth Page  redirecting after provider get param
+func handleAuth(res http.ResponseWriter, req *http.Request) {
+	url := fmt.Sprintf("%s/auth/%s", host, req.FormValue("provider"))
+	fmt.Printf("redirect to %s\n", url)
 	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 }
 
-// GET /callback  Called by github after authorization is granted
-func handleGitHubCallback(res http.ResponseWriter, req *http.Request) {
+// GET /auth/provider  Initial page redirecting by provider
+func handleAuthProvider(res http.ResponseWriter, req *http.Request) {
+	gothic.BeginAuthHandler(res, req)
+}
+
+// GET /callback/{provider}  Called by provider after authorization is granted
+func handleCallbackProvider(res http.ResponseWriter, req *http.Request) {
 	var (
 		status string
 		result string
 	)
-	state := req.FormValue("state")
-	if state != oauthStateString {
-		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
-	}
-	provider := "github"
-	code := req.FormValue("code")
-	token, err := oauthConf.Exchange(oauth2.NoContext, code)
-	if err != nil {
-		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
-		status = "error"
-		result = fmt.Sprintf("%s", err)
+	provider, errProvider := gothic.GetProviderName(req)
+	user, errAuth := gothic.CompleteUserAuth(res, req)
+	status = "error"
+	if errProvider != nil {
+		fmt.Printf("provider failed with '%s'\n", errProvider)
+		result = fmt.Sprintf("%s", errProvider)
+	} else if errAuth != nil {
+		fmt.Printf("auth failed with '%s'\n", errAuth)
+		result = fmt.Sprintf("%s", errAuth)
 	} else {
-		oauthClient := oauthConf.Client(oauth2.NoContext, token)
-		client := githubclient.NewClient(oauthClient)
-		user, _, err := client.Users.Get(oauth2.NoContext, "")
-		if err != nil {
-			fmt.Printf("client.Users.Get() falled with '%s'\n", err)
-			status = "error"
-			result = fmt.Sprintf("%s", err)
-		} else {
-			fmt.Printf("Logged in as github user: %s (%s)\n", *user.Login, token.AccessToken)
-			status = "success"
-			result = fmt.Sprintf(`{"token":"%s", "provider":"%s"}`, token.AccessToken, provider)
-		}
+		fmt.Printf("Logged in as %s user: %s (%s)\n", user.Provider, user.Email, user.AccessToken)
+		status = "success"
+		result = fmt.Sprintf(`{"token":"%s", "provider":"%s"}`, user.AccessToken, user.Provider)
 	}
 	res.Header().Set("Content-Type", "text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(fmt.Sprintf(script, status, provider, result)))
 }
 
+// GET /refresh
 func handleRefresh(res http.ResponseWriter, req *http.Request) {
 	fmt.Printf("refresh with '%s'\n", req)
 	res.Write([]byte(""))
@@ -119,13 +109,23 @@ func init() {
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}
+	goth.UseProviders(
+		github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), fmt.Sprintf("http://%s/callback/github", host)),
+		bitbucket.New(os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"), fmt.Sprintf("http://%s/callback//bitbucket", host)),
+		gitlab.New(os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"), fmt.Sprintf("http://%s/callback/gitlab", host)),
+	)
 }
 
 func main() {
-	http.HandleFunc("/", handleMain)
-	http.HandleFunc("/auth", handleGitHubAuth)
-	http.HandleFunc("/success", handleGitHubSuccess)
-	http.HandleFunc("/callback", handleGitHubCallback)
+	router := pat.New()
+	router.Get("/callback/{provider}", handleCallbackProvider)
+	router.Get("/auth/{provider}", handleAuthProvider)
+	router.Get("/auth", handleAuth)
+	router.Get("/refresh", handleRefresh)
+	router.Get("/success", handleSuccess)
+	router.Get("/", handleMain)
+	//
+	http.Handle("/", router)
 	//
 	fmt.Printf("Started running on %s\n", host)
 	fmt.Println(http.ListenAndServe(host, nil))
