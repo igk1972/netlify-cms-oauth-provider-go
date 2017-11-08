@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"./dotenv"
 )
 
 var (
@@ -18,6 +20,7 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	dotenv.File(".env")
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}
