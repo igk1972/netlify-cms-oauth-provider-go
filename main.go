@@ -6,10 +6,13 @@ import (
 	"os"
 
 	"./dotenv"
+	rand "./randstr"
 )
 
 var (
 	host = "localhost:3000"
+	// random string for oauth2 API calls to protect against CSRF
+	oauthStateString = rand.RandomString(64)
 )
 
 // /
@@ -25,6 +28,10 @@ func handleGitHubAuth(w http.ResponseWriter, r *http.Request) {
 
 // /callback. Called by github after authorization is granted
 func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
+	state := r.FormValue("state")
+	if state != oauthStateString {
+		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(``))
