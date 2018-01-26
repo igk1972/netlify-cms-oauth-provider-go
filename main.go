@@ -109,6 +109,23 @@ func init() {
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}
+	var (
+		gitlabProvider goth.Provider
+	)
+	if gitlabServer, ok := os.LookupEnv("GITLAB_SERVER"); ok {
+		gitlabProvider = gitlab.NewCustomisedURL(
+			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
+			fmt.Sprintf("https://%s/callback/gitlab", host),
+			fmt.Sprintf("https://%s/oauth/authorize", gitlabServer),
+			fmt.Sprintf("https://%s/oauth/token", gitlabServer),
+			fmt.Sprintf("https://%s/api/v3/user", gitlabServer),
+		)
+	} else {
+		gitlabProvider = gitlab.New(
+			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
+			fmt.Sprintf("https://%s/callback/gitlab", host),
+		)
+	}
 	goth.UseProviders(
 		github.New(
 			os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"),
@@ -118,10 +135,7 @@ func init() {
 			os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"),
 			fmt.Sprintf("https://%s/callback//bitbucket", host),
 		),
-		gitlab.New(
-			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
-			fmt.Sprintf("https://%s/callback/gitlab", host),
-		),
+		gitlabProvider,
 	)
 }
 
