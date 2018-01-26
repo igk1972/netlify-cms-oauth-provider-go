@@ -110,9 +110,18 @@ func init() {
 		host = hostEnv
 	}
 	goth.UseProviders(
-		github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), fmt.Sprintf("https://%s/callback/github", host)),
-		bitbucket.New(os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"), fmt.Sprintf("https://%s/callback//bitbucket", host)),
-		gitlab.New(os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"), fmt.Sprintf("https://%s/callback/gitlab", host)),
+		github.New(
+			os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"),
+			fmt.Sprintf("https://%s/callback/github", host),
+		),
+		bitbucket.New(
+			os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"),
+			fmt.Sprintf("https://%s/callback//bitbucket", host),
+		),
+		gitlab.New(
+			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
+			fmt.Sprintf("https://%s/callback/gitlab", host),
+		),
 	)
 }
 
