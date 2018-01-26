@@ -121,6 +121,9 @@ func init() {
 		gitlab.New(
 			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
 			fmt.Sprintf("https://%s/callback/gitlab", host),
+			fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("GITLAB_SERVER")),
+			fmt.Sprintf("https://%s/oauth/token", os.Getenv("GITLAB_SERVER")),
+			fmt.Sprintf("https://%s/api/v3/user", os.Getenv("GITLAB_SERVER")),
 		),
 	)
 }
