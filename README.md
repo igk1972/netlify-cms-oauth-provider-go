@@ -12,7 +12,16 @@ inspired by [netlify-cms-github-oauth-provider](https://github.com/vencax/netlif
 
 ## 1) Install
 
-TODO... Now just download binary release, or compile from source. 
+```bash
+# binary will be $GOPATH/bin/netlify-cms-oauth-provider-go
+curl -sfL https://raw.githubusercontent.com/igk1972/netlify-cms-oauth-provider-go/master/install.sh | sh -s -- -b $GOPATH/bin
+
+# or install it into ./bin/
+curl -sfL https://raw.githubusercontent.com/igk1972/netlify-cms-oauth-provider-go/master/install.sh | sh -s
+
+# In alpine linux (as it does not come with curl by default)
+wget -O - -q https://raw.githubusercontent.com/igk1972/netlify-cms-oauth-provider-go/master/install.sh | sh -s
+```
 
 ## 2) Config
 
