@@ -18,6 +18,7 @@ Configuration is done with environment variables, which can be supplied as comma
 
 ```
 HOST=localhost:3000
+CALLBACK_HOST=localhost:3000
 SESSION_SECRET=your-random-string
 GITHUB_KEY=
 GITHUB_SECRET=
