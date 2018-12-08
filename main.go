@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -50,6 +51,7 @@ const (
 
 // GET /
 func handleMain(res http.ResponseWriter, req *http.Request) {
+	log.Printf("handling root route '%s'\n", req)
 	res.Header().Set("Content-Type", "text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(``))
@@ -58,7 +60,7 @@ func handleMain(res http.ResponseWriter, req *http.Request) {
 // GET /auth Page  redirecting after provider get param
 func handleAuth(res http.ResponseWriter, req *http.Request) {
 	url := fmt.Sprintf("%s/auth/%s", host, req.FormValue("provider"))
-	fmt.Printf("redirect to %s\n", url)
+	log.Printf("redirect to %s\n", url)
 	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 }
 
@@ -77,13 +79,13 @@ func handleCallbackProvider(res http.ResponseWriter, req *http.Request) {
 	user, errAuth := gothic.CompleteUserAuth(res, req)
 	status = "error"
 	if errProvider != nil {
-		fmt.Printf("provider failed with '%s'\n", errProvider)
+		log.Printf("provider failed with '%s'\n", errProvider)
 		result = fmt.Sprintf("%s", errProvider)
 	} else if errAuth != nil {
-		fmt.Printf("auth failed with '%s'\n", errAuth)
+		log.Printf("auth failed with '%s'\n", errAuth)
 		result = fmt.Sprintf("%s", errAuth)
 	} else {
-		fmt.Printf("Logged in as %s user: %s (%s)\n", user.Provider, user.Email, user.AccessToken)
+		log.Printf("Logged in as %s user: %s (%s)\n", user.Provider, user.Email, user.AccessToken)
 		status = "success"
 		result = fmt.Sprintf(`{"token":"%s", "provider":"%s"}`, user.AccessToken, user.Provider)
 	}
@@ -94,13 +96,13 @@ func handleCallbackProvider(res http.ResponseWriter, req *http.Request) {
 
 // GET /refresh
 func handleRefresh(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("refresh with '%s'\n", req)
+	log.Printf("refresh with '%s'\n", req)
 	res.Write([]byte(""))
 }
 
 // GET /success
 func handleSuccess(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("success with '%s'\n", req)
+	log.Printf("success with '%s'\n", req)
 	res.Write([]byte(""))
 }
 
@@ -147,9 +149,9 @@ func main() {
 	router.Get("/refresh", handleRefresh)
 	router.Get("/success", handleSuccess)
 	router.Get("/", handleMain)
-	//
+
 	http.Handle("/", router)
-	//
-	fmt.Printf("Started running on %s\n", host)
-	fmt.Println(http.ListenAndServe(host, nil))
+
+	log.Printf("Started running on %s\n", host)
+	log.Println(http.ListenAndServe(host, nil))
 }
