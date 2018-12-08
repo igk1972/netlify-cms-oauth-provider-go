@@ -138,7 +138,7 @@ func init() {
 		),
 		bitbucket.New(
 			os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"),
-			fmt.Sprintf("https://%s/callback//bitbucket", host),
+			fmt.Sprintf("https://%s/callback/bitbucket", host),
 		),
 		gitlabProvider,
 	)
