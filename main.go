@@ -13,7 +13,7 @@ import (
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/gitlab"
 
-	"./dotenv"
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -107,7 +107,10 @@ func handleSuccess(res http.ResponseWriter, req *http.Request) {
 }
 
 func init() {
-	dotenv.File(".env")
+	err := godotenv.Load()
+	if err != nil {
+		log.Println(".env file not present. Loading directly from environment")
+	}
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}
