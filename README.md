@@ -1,4 +1,10 @@
 # netlify-cms-oauth-provider-go
+
+[![Build Status](https://travis-ci.org/igk1972/netlify-cms-oauth-provider-go.svg?branch=master)](https://travis-ci.org/igk1972/netlify-cms-oauth-provider-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/igk1972/netlify-cms-oauth-provider-go)](https://goreportcard.com/report/github.com/igk1972/netlify-cms-oauth-provider-go)
+[![Downloads](https://img.shields.io/github/downloads/igk1972/netlify-cms-oauth-provider-go/latest/total.svg)](https://github.com/igk1972/netlify-cms-oauth-provider-go/releases)
+[![Latest release](https://img.shields.io/github/release/igk1972/netlify-cms-oauth-provider-go.svg)](https://github.com/igk1972/netlify-cms-oauth-provider-go/releases)
+
 Netlify-CMS oauth client sending token in form as Netlify service itself, implementation in Go (golang) 
 
 inspired by [netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider) (node-js). Thanks Václav!

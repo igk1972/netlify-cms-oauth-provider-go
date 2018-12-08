@@ -1,0 +1,21 @@
+project_name: netlify-cms-oauth-provider-go
+
+release:
+  github:
+    owner: igk1972
+    name: netlify-cms-oauth-provider-go
+
+before:
+  hooks:
+  - go mod download
+
+builds:
+- main: ./main.go
+  binary: netlify-cms-oauth-provider-go
+  goos:
+  - windows
+  - darwin
+  - linux
+  goarch:
+  - amd64
+  - 386
