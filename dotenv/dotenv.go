@@ -8,6 +8,13 @@ import (
 	"strings"
 )
 
+// Default to loading .env file if it exists
+func init() {
+    if(nil != File(".env")) {
+        LoadDotenv = false
+    }
+}
+
 // Env defines Key and Value
 type Env struct {
 	Key   string
@@ -15,6 +22,7 @@ type Env struct {
 }
 
 var readFile = ioutil.ReadFile
+var LoadDotenv = true
 
 // File sets the env variables by a given file
 func File(filename string) error {

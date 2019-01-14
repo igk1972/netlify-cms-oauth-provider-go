@@ -2,6 +2,8 @@ TARGET_BIN = netlify-cms-oauth-provider
 TARGET_ARCH = amd64
 SOURCE_MAIN = main.go
 LDFLAGS = -s -w
+GOPATH = $(CURDIR)
+export GOPATH
 
 all: build
 

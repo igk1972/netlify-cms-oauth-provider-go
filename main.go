@@ -1,6 +1,8 @@
 package main
 
 import (
+    // Refer to dotenv package first, to ensure it loads any .env settings before other init() functions try and use 'em.. isn't Golang great?
+	"./dotenv"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,11 +14,11 @@ import (
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/gitlab"
 
-	"./dotenv"
 )
 
 var (
 	host = "localhost:3000"
+    base = host
 )
 
 const (
@@ -32,10 +34,7 @@ const (
     function recieveMessage(e) {
       console.log("Recieve message:", e);
       // send message to main window with da app
-      window.opener.postMessage(
-        "authorization:" + provider + ":" + status + ":" + result,
-        e.origin
-      );
+      window.opener.postMessage("authorization:" + provider + ":" + status + ":" + result, "*");
     }
     window.addEventListener("message", recieveMessage, false);
     // Start handshare with parent
@@ -44,7 +43,7 @@ const (
       "authorizing:" + provider,
       "*"
     );
-  })("%s", "%s", %s)
+  })("%s", "%s", '%s')
   </script></head><body></body></html>`
 )
 
@@ -57,7 +56,7 @@ func handleMain(res http.ResponseWriter, req *http.Request) {
 
 // GET /auth Page  redirecting after provider get param
 func handleAuth(res http.ResponseWriter, req *http.Request) {
-	url := fmt.Sprintf("%s/auth/%s", host, req.FormValue("provider"))
+	url := fmt.Sprintf("%s/auth/%s", base, req.FormValue("provider"))
 	fmt.Printf("redirect to %s\n", url)
 	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 }
@@ -105,17 +104,21 @@ func handleSuccess(res http.ResponseWriter, req *http.Request) {
 }
 
 func init() {
-	dotenv.File(".env")
+    fmt.Printf(".env loaded: %t\n", dotenv.LoadDotenv)
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}
+	if baseEnv, ok := os.LookupEnv("BASE"); ok {
+		base = baseEnv
+	}
+    fmt.Printf("host=%s base=%s\n", host, base)
 	var (
 		gitlabProvider goth.Provider
 	)
 	if gitlabServer, ok := os.LookupEnv("GITLAB_SERVER"); ok {
 		gitlabProvider = gitlab.NewCustomisedURL(
 			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
-			fmt.Sprintf("https://%s/callback/gitlab", host),
+			fmt.Sprintf("%s/callback/gitlab", base),
 			fmt.Sprintf("https://%s/oauth/authorize", gitlabServer),
 			fmt.Sprintf("https://%s/oauth/token", gitlabServer),
 			fmt.Sprintf("https://%s/api/v3/user", gitlabServer),
@@ -123,17 +126,18 @@ func init() {
 	} else {
 		gitlabProvider = gitlab.New(
 			os.Getenv("GITLAB_KEY"), os.Getenv("GITLAB_SECRET"),
-			fmt.Sprintf("https://%s/callback/gitlab", host),
+			fmt.Sprintf("%s/callback/gitlab", base),
 		)
 	}
 	goth.UseProviders(
 		github.New(
 			os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"),
-			fmt.Sprintf("https://%s/callback/github", host),
+			fmt.Sprintf("%s/callback/github", base),
+            "repo", // https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/
 		),
 		bitbucket.New(
 			os.Getenv("BITBUCKET_KEY"), os.Getenv("BITBUCKET_SECRET"),
-			fmt.Sprintf("https://%s/callback//bitbucket", host),
+			fmt.Sprintf("%s/callback//bitbucket", base),
 		),
 		gitlabProvider,
 	)
