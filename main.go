@@ -7,6 +7,11 @@ import (
 	"net/http"
 	"os"
     "os/exec"
+    "crypto/hmac"
+    "crypto/sha1"
+    "io/ioutil"
+    "encoding/hex"
+    "strings"
 
 	"github.com/gorilla/pat"
 	"github.com/markbates/goth"
@@ -106,19 +111,56 @@ func handleSuccess(res http.ResponseWriter, req *http.Request) {
 
 // POST /callback/deploy
 func handleDeploy(res http.ResponseWriter, req *http.Request) {
-    fmt.Printf("deploy from github\n");
-    // Go ahead and run a deploy, ignoring the webhook content completely..
-    if hookExec, ok := os.LookupEnv("GITHUB_HOOK_EXEC"); ok {
-        cmd := exec.Command(hookExec)
-        err := cmd.Run()
-        if err != nil {
-            fmt.Printf("unable to run deploy command (%s): %v\n", hookExec, err)
+    fmt.Printf("deploy from github..");
+    // Check signature in webhook
+    if hookSecret, ok := os.LookupEnv("GITHUB_HOOK_SECRET"); ok {
+        if isValidSignature(req, hookSecret) {
+            // Go ahead and run a deploy, ignoring the webhook content completely..
+            if hookExec, ok := os.LookupEnv("GITHUB_HOOK_EXEC"); ok {
+                cmd := exec.Command(hookExec)
+                err := cmd.Run()
+                if err != nil {
+                    fmt.Printf("unable to run deploy command (%s): %v\n", hookExec, err)
+                } else {
+                    fmt.Printf("ok\n")
+                }
+            } else {
+                fmt.Printf("missing GITHUB_HOOK_EXEC env\n")
+            }
+        } else {
+            fmt.Printf("invalid hook signature\n")
         }
     } else {
-        fmt.Printf("missing GITHUB_HOOK_EXEC env\n");
+        fmt.Printf("no secret, skipping\n")
     }
     res.Write([]byte(""))
 }
+
+// https://stackoverflow.com/questions/53242837/validating-github-webhook-hmac-signature-in-go
+func isValidSignature(r *http.Request, key string) bool {
+    // Assuming a non-empty header
+    gotHash := strings.SplitN(r.Header.Get("X-Hub-Signature"), "=", 2)
+    if gotHash[0] != "sha1" {
+        return false
+    }
+    defer r.Body.Close()
+
+    b, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        fmt.Printf("Cannot read the request body: %s\n", err)
+        return false
+    }
+
+    hash := hmac.New(sha1.New, []byte(key))
+    if _, err := hash.Write(b); err != nil {
+        fmt.Printf("Cannot compute the HMAC for request: %s\n", err)
+        return false
+    }
+
+    expectedHash := hex.EncodeToString(hash.Sum(nil))
+    return gotHash[1] == expectedHash
+}
+
 
 func init() {
     fmt.Printf(".env loaded: %t\n", dotenv.LoadDotenv)
