@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+    "os/exec"
 
 	"github.com/gorilla/pat"
 	"github.com/markbates/goth"
@@ -103,6 +104,22 @@ func handleSuccess(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(""))
 }
 
+// POST /callback/deploy
+func handleDeploy(res http.ResponseWriter, req *http.Request) {
+    fmt.Printf("deploy from github\n");
+    // Go ahead and run a deploy, ignoring the webhook content completely..
+    if hookExec, ok := os.LookupEnv("GITHUB_HOOK_EXEC"); ok {
+        cmd := exec.Command(hookExec)
+        err := cmd.Run()
+        if err != nil {
+            fmt.Printf("unable to run deploy command (%s): %v\n", hookExec, err)
+        }
+    } else {
+        fmt.Printf("missing GITHUB_HOOK_EXEC env\n");
+    }
+    res.Write([]byte(""))
+}
+
 func init() {
     fmt.Printf(".env loaded: %t\n", dotenv.LoadDotenv)
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
@@ -145,6 +162,7 @@ func init() {
 
 func main() {
 	router := pat.New()
+    router.Post("/callback/deploy", handleDeploy)
 	router.Get("/callback/{provider}", handleCallbackProvider)
 	router.Get("/auth/{provider}", handleAuthProvider)
 	router.Get("/auth", handleAuth)
