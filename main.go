@@ -118,6 +118,9 @@ func handleDeploy(res http.ResponseWriter, req *http.Request) {
             // Go ahead and run a deploy, ignoring the webhook content completely..
             if hookExec, ok := os.LookupEnv("GITHUB_HOOK_EXEC"); ok {
                 cmd := exec.Command(hookExec)
+                cmd.Stdin = os.Stdin
+                cmd.Stdout = os.Stdout
+                cmd.Stderr = os.Stderr
                 err := cmd.Run()
                 if err != nil {
                     fmt.Printf("unable to run deploy command (%s): %v\n", hookExec, err)
