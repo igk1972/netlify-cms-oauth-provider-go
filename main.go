@@ -11,8 +11,6 @@ import (
 	"github.com/markbates/goth/providers/bitbucket"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/gitlab"
-
-	"./dotenv"
 )
 
 var (
@@ -105,7 +103,6 @@ func handleSuccess(res http.ResponseWriter, req *http.Request) {
 }
 
 func init() {
-	dotenv.File(".env")
 	if hostEnv, ok := os.LookupEnv("HOST"); ok {
 		host = hostEnv
 	}

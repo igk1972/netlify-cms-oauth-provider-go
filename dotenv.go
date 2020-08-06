@@ -1,4 +1,4 @@
-package dotenv
+package main
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
 )
 
 // Env defines Key and Value
