@@ -1,4 +1,4 @@
-// Copyright 2016-2019, Pulumi Corporation.  All rights reserved.
+// Copyright 2016-2020, Pulumi Corporation.  All rights reserved.
 
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi"
@@ -16,10 +16,27 @@ const cluster = new awsx.ecs.Cluster("cluster");
 // Step 2: Define the Networking for our service.
 const alb = new awsx.elasticloadbalancingv2.ApplicationLoadBalancer(
     "net-lb", { external: true, securityGroups: cluster.securityGroups });
+
 const web = alb.createListener("web", { 
-    port: 80, 
+    port: 443,
     external: true,
-    protocol: "HTTP"
+    protocol: "HTTPS",
+    certificateArn: "arn:aws:acm:us-east-1:616138583583:certificate/607bd17c-9e6e-438a-a90e-a6a2cbfdc678"
+});
+
+const tg = alb.createTargetGroup("oauth-tg", {
+    port: 80
+});
+
+new awsx.lb.ListenerRule("oauth-listener-rule", web, {
+    actions: [{
+        type: "forward",
+        targetGroupArn: tg.targetGroup.arn,
+    }],
+    conditions: [{
+        field: "path-pattern",
+        values: "/*",
+    }],
 });
 
 // Step 3: Build and publish a Docker image to a private ECR registry.
@@ -39,7 +56,7 @@ const appService = new awsx.ecs.FargateService("app-svc", {
             image: img,
             cpu: 102 /*10% of 1024*/,
             memory: 50 /*MB*/,
-            portMappings: [ web ],
+            portMappings: [ tg ],
             environment: [
                 { 
                     name: "HOST",
