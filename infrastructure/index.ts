@@ -42,11 +42,11 @@ new awsx.lb.ListenerRule("oauth-listener-rule", web, {
 // Step 3: Build and publish a Docker image to a private ECR registry.
 const img = awsx.ecs.Image.fromPath("cms-oauth-img", "../");
 
-// const randomRandomString = new random.RandomString("random", {
-//     length: 16,
-//     overrideSpecial: "/@£$",
-//     special: true,
-// });
+// Create a random string and also mark its `result` property as a secret,
+// so it is not stored in plaintext in the stack's state.
+const sessionSecretRandomString = new random.RandomPassword("random", {
+    length: 32,
+}, { additionalSecretOutputs: ["result"] });
 
 // Step 4: Create a Fargate service task that can scale out.
 const appService = new awsx.ecs.FargateService("app-svc", {
@@ -54,8 +54,7 @@ const appService = new awsx.ecs.FargateService("app-svc", {
     taskDefinitionArgs: {
         container: {
             image: img,
-            cpu: 102 /*10% of 1024*/,
-            memory: 50 /*MB*/,
+            memory: 128 /*MB*/,
             portMappings: [ tg ],
             environment: [
                 { 
@@ -64,7 +63,7 @@ const appService = new awsx.ecs.FargateService("app-svc", {
                 },
                 { 
                     name: "SESSION_SECRET",
-                    value: "choprodrIbroh41huwru"
+                    value: sessionSecretRandomString.result
                 },
                 {
                     name: "GITHUB_KEY",
