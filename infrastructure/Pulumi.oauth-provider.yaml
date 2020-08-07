@@ -3,3 +3,4 @@ config:
   netlify-cms-oauth-provider-infrastructure:githubKey: 8f30fec6a935a33a9734
   netlify-cms-oauth-provider-infrastructure:githubSecret:
     secure: AAABAHq81ceKl4VdpXcWsGraF3dDi6X/hObiwYJhERsi0z8Vd6igruAInAJqHgFBB5BYosgnoeU6JdGR0HC6DUUITqvLuXyE
+  netlify-cms-oauth-provider-infrastructure:targetDomain: doc-cms-oauth.pulumi-demos.net
