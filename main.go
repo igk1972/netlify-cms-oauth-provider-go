@@ -31,7 +31,7 @@ const (
       console.log("Recieve message:", e);
       // send message to main window with da app
       window.opener.postMessage(
-        "authorization:" + provider + ":" + status + ":" + result,
+        "authorization:" + provider + ":" + status + ":" + JSON.stringify(result),
         e.origin
       );
     }
