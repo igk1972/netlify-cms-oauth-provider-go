@@ -59,7 +59,7 @@ const appService = new awsx.ecs.FargateService("app-svc", {
             environment: [
                 { 
                     name: "HOST",
-                    value: ":80"
+                    value: pulumi.interpolate `https://${web.endpoint.hostname}`
                 },
                 { 
                     name: "SESSION_SECRET",
