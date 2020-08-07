@@ -2,4 +2,4 @@ config:
   aws:region: us-east-1
   netlify-cms-oauth-provider-infrastructure:githubKey: 8f30fec6a935a33a9734
   netlify-cms-oauth-provider-infrastructure:githubSecret:
-    secure: AAABAKR2Sg2TQjVZ3IhyTnQx7NvpMLYYsPNNM6wQJVr39Kf5fpHOWJRdSipLK7Xk1Azddr9eXBOPtz42lIybDZvFy9dqbBHs
+    secure: AAABAHq81ceKl4VdpXcWsGraF3dDi6X/hObiwYJhERsi0z8Vd6igruAInAJqHgFBB5BYosgnoeU6JdGR0HC6DUUITqvLuXyE
