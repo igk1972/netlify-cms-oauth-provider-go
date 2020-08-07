@@ -148,6 +148,6 @@ func main() {
 	//
 	http.Handle("/", router)
 	//
-	fmt.Printf("Started running on %s\n", host)
-	fmt.Println(http.ListenAndServe(host, nil))
+	fmt.Print("Started running on 80\n")
+	fmt.Println(http.ListenAndServe(":80", nil))
 }
