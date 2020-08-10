@@ -6,7 +6,7 @@ import { config } from "process";
 import * as random from "@pulumi/random";
 import * as aws from "@pulumi/aws";
 
-// Step 1: Read stack inputs for Github key and Github secret
+// Read stack inputs for Github key and Github secret and the domain for oauth provider
 const pulumiConfig = new pulumi.Config();
 const cmsStackConfig = {
     githubKey : pulumiConfig.require("githubKey"),
@@ -14,91 +14,28 @@ const cmsStackConfig = {
     targetDomain : pulumiConfig.require("targetDomain")
 }
 
-// Step 1: Create an ECS Fargate cluster.
-const cluster = new awsx.ecs.Cluster("cluster");
 
-// Step 2: Define the Networking for our service.
-const alb = new awsx.elasticloadbalancingv2.ApplicationLoadBalancer(
-    "net-lb", { external: true, securityGroups: cluster.securityGroups });
+// ---- Creating certificate and domain for the oauth provider ---- //
 
-const web = alb.createListener("web", { 
-    port: 443,
-    external: true,
-    protocol: "HTTPS",
-    certificateArn: "arn:aws:acm:us-east-1:616138583583:certificate/607bd17c-9e6e-438a-a90e-a6a2cbfdc678"
-});
-
-const tg = alb.createTargetGroup("oauth-tg", {
-    port: 80
-});
-
-new awsx.lb.ListenerRule("oauth-listener-rule", web, {
-    actions: [{
-        type: "forward",
-        targetGroupArn: tg.targetGroup.arn,
-    }],
-    conditions: [{
-        field: "path-pattern",
-        values: "/*",
-    }],
-});
-
-// Step 3: Build and publish a Docker image to a private ECR registry.
-const img = awsx.ecs.Image.fromPath("cms-oauth-img", "../");
-
-// Create a random string and also mark its `result` property as a secret,
-// so it is not stored in plaintext in the stack's state.
-const sessionSecretRandomString = new random.RandomPassword("random", {
-    length: 32,
-}, { additionalSecretOutputs: ["result"] });
-
-// Step 4: Create a Fargate service task that can scale out.
-const appService = new awsx.ecs.FargateService("app-svc", {
-    cluster,
-    taskDefinitionArgs: {
-        container: {
-            image: img,
-            memory: 128 /*MB*/,
-            portMappings: [ tg ],
-            environment: [
-                { 
-                    name: "HOST",
-                    value: pulumi.interpolate `https://${cmsStackConfig.targetDomain}`
-                },
-                { 
-                    name: "SESSION_SECRET",
-                    value: sessionSecretRandomString.result
-                },
-                {
-                    name: "GITHUB_KEY",
-                    value: cmsStackConfig.githubKey
-                },
-                {
-                    name: "GITHUB_SECRET",
-                    value: cmsStackConfig.githubSecret
-                }
-            ]
-        },
-    },
-    desiredCount: 1,
-});
-
-//-------------------Config Certification---///
 // Get a east provider
 const eastRegion = new aws.Provider("east", {
     profile: aws.config.profile,
     region: "us-east-1", // Per AWS, ACM certificate must be in the us-east-1 region.
 });
 
-//Creating a Certificate with the target domain
+// Creating a Certificate for the given domain
 const certificate = new aws.acm.Certificate("certificate", {
     domainName: cmsStackConfig.targetDomain,
     validationMethod: "DNS",
 }, { provider: eastRegion });
 
+// Split given domain in the configuration to domain and subdomain
 const domainParts = getDomainAndSubdomain(cmsStackConfig.targetDomain);
+
+// Get the zone of the given domain
 const hostedZoneId = aws.route53.getZone({ name: domainParts.parentDomain }, { async: true }).then(zone => zone.zoneId);
 
+// The temporation record for the validation domain has 10 to be live
 const tenMinutes = 60 * 10;
 
 /**
@@ -148,6 +85,84 @@ const certificateValidation = new aws.acm.CertificateValidation("certificateVali
     validationRecordFqdns: [certificateValidationDomain.fqdn],
 }, { provider: eastRegion });
 
+
+// ---- ECS Fargate configuration ---- //
+
+// Create an ECS Fargate cluster.
+const cluster = new awsx.ecs.Cluster("cluster");
+
+// Define an ec2 application load balancer alb
+const alb = new awsx.elasticloadbalancingv2.ApplicationLoadBalancer(
+    "net-lb", { external: true, securityGroups: cluster.securityGroups });
+
+// alb need a listener to listen to 443 the standard port for the HTTPS traffic certificate is using
+const web = alb.createListener("web", { 
+    port: 443,
+    external: true,
+    protocol: "HTTPS",
+    certificateArn: certificate.arn
+});
+
+
+const tg = alb.createTargetGroup("oauth-tg", {
+    port: 80
+});
+
+new awsx.lb.ListenerRule("oauth-listener-rule", web, {
+    actions: [{
+        type: "forward",
+        targetGroupArn: tg.targetGroup.arn,
+    }],
+    conditions: [{
+        field: "path-pattern",
+        values: "/*",
+    }],
+});
+
+// Build and publish a Docker image to a private ECR registry.
+const img = awsx.ecs.Image.fromPath("cms-oauth-img", "../");
+
+// Create a random string and also mark its `result` property as a secret,
+// so it is not stored in plaintext in the stack's state.
+const sessionSecretRandomString = new random.RandomPassword("random", {
+    length: 32,
+}, { additionalSecretOutputs: ["result"] });
+
+// Create a Fargate service task that can scale out.
+const appService = new awsx.ecs.FargateService("app-svc", {
+    cluster,
+    taskDefinitionArgs: {
+        container: {
+            image: img,
+            memory: 128 /*MB*/,
+            portMappings: [ tg ],
+            environment: [
+                { 
+                    name: "HOST",
+                    // The target domain which would concatenate with callbacks in main.go
+                    value: pulumi.interpolate `https://${cmsStackConfig.targetDomain}`
+                },
+                { 
+                    name: "SESSION_SECRET",
+                    value: sessionSecretRandomString.result
+                },
+                {
+                    name: "GITHUB_KEY",
+                    value: cmsStackConfig.githubKey
+                },
+                {
+                    name: "GITHUB_SECRET",
+                    value: cmsStackConfig.githubSecret
+                }
+            ]
+        },
+    },
+    desiredCount: 1,
+});
+
+
+// ---- Create Alias Record ---- //
+
 // Creates a new Route53 DNS record pointing the domain to the CloudFront distribution.
 function createAliasRecord(
     targetDomain: string, lb: awsx.elasticloadbalancingv2.ApplicationLoadBalancer): aws.route53.Record {
@@ -168,8 +183,8 @@ function createAliasRecord(
             ],
         });
 }
-
+// Create the aliasRecord with targetdomain and application load balancer
 const aRecord = createAliasRecord(cmsStackConfig.targetDomain, alb);
 
-// Step 5: Export the Internet address for the service.
+// Export the Internet address for the service.
 export const rawEndpointUrl = web.endpoint.hostname;
