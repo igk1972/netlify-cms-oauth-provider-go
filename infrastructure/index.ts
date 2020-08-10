@@ -4,25 +4,105 @@ import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi"
 import { config } from "process";
 import * as random from "@pulumi/random";
+import * as aws from "@pulumi/aws";
 
-// Step 1: Read stack inputs for Github key and Github secret
+// Read stack inputs for Github key and Github secret and the domain for oauth provider
 const pulumiConfig = new pulumi.Config();
-const githubKey = pulumiConfig.require("githubKey");
-const githubSecret = pulumiConfig.requireSecret("githubSecret")
+const cmsStackConfig = {
+    githubKey : pulumiConfig.require("githubKey"),
+    githubSecret : pulumiConfig.requireSecret("githubSecret"),
+    targetDomain : pulumiConfig.require("targetDomain")
+}
 
-// Step 1: Create an ECS Fargate cluster.
+
+// ---- Creating certificate and domain for the oauth provider ---- //
+
+// Get a east provider
+const eastRegion = new aws.Provider("east", {
+    profile: aws.config.profile,
+    region: "us-east-1", // Per AWS, ACM certificate must be in the us-east-1 region.
+});
+
+// Creating a Certificate for the given domain
+const certificate = new aws.acm.Certificate("certificate", {
+    domainName: cmsStackConfig.targetDomain,
+    validationMethod: "DNS",
+}, { provider: eastRegion });
+
+// Split given domain in the configuration to domain and subdomain
+const domainParts = getDomainAndSubdomain(cmsStackConfig.targetDomain);
+
+// Get the zone of the given domain
+const hostedZoneId = aws.route53.getZone({ name: domainParts.parentDomain }, { async: true }).then(zone => zone.zoneId);
+
+// The temporation record for the validation domain has 10 to be live
+const tenMinutes = 60 * 10;
+
+/**
+ *  Create a DNS record to prove that we _own_ the domain we're requesting a certificate for.
+ *  See https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html for more info.
+ */
+const certificateValidationDomain = new aws.route53.Record(`${cmsStackConfig.targetDomain}-validation`, {
+    name: certificate.domainValidationOptions[0].resourceRecordName,
+    zoneId: hostedZoneId,
+    type: certificate.domainValidationOptions[0].resourceRecordType,
+    records: [certificate.domainValidationOptions[0].resourceRecordValue],
+    ttl: tenMinutes,
+});
+
+// Split a domain name into its subdomain and parent domain names.
+// e.g. "www.example.com" => "www", "example.com".
+function getDomainAndSubdomain(domain: string): { subdomain: string, parentDomain: string } {
+    const parts = domain.split(".");
+    if (parts.length < 2) {
+        throw new Error(`No TLD found on ${domain}`);
+    }
+    // No subdomain, e.g. awesome-website.com.
+    if (parts.length === 2) {
+        return { subdomain: "", parentDomain: domain };
+    }
+
+    const subdomain = parts[0];
+    parts.shift();  // Drop first element.
+    return {
+        subdomain,
+        // Trailing "." to canonicalize domain.
+        parentDomain: parts.join(".") + ".",
+    };
+}
+
+/**
+ * This is a _special_ resource that waits for ACM to complete validation via the DNS record
+ * checking for a status of "ISSUED" on the certificate itself. No actual resources are
+ * created (or updated or deleted).
+ *
+ * See https://www.terraform.io/docs/providers/aws/r/acm_certificate_validation.html for slightly more detail
+ * and https://github.com/terraform-providers/terraform-provider-aws/blob/master/aws/resource_aws_acm_certificate_validation.go
+ * for the actual implementation.
+ */
+const certificateValidation = new aws.acm.CertificateValidation("certificateValidation", {
+    certificateArn: certificate.arn,
+    validationRecordFqdns: [certificateValidationDomain.fqdn],
+}, { provider: eastRegion });
+
+
+// ---- ECS Fargate configuration ---- //
+
+// Create an ECS Fargate cluster.
 const cluster = new awsx.ecs.Cluster("cluster");
 
-// Step 2: Define the Networking for our service.
+// Define an ec2 application load balancer alb
 const alb = new awsx.elasticloadbalancingv2.ApplicationLoadBalancer(
     "net-lb", { external: true, securityGroups: cluster.securityGroups });
 
+// alb need a listener to listen to 443 the standard port for the HTTPS traffic certificate is using
 const web = alb.createListener("web", { 
     port: 443,
     external: true,
     protocol: "HTTPS",
-    certificateArn: "arn:aws:acm:us-east-1:616138583583:certificate/607bd17c-9e6e-438a-a90e-a6a2cbfdc678"
+    certificateArn: certificate.arn
 });
+
 
 const tg = alb.createTargetGroup("oauth-tg", {
     port: 80
@@ -39,7 +119,7 @@ new awsx.lb.ListenerRule("oauth-listener-rule", web, {
     }],
 });
 
-// Step 3: Build and publish a Docker image to a private ECR registry.
+// Build and publish a Docker image to a private ECR registry.
 const img = awsx.ecs.Image.fromPath("cms-oauth-img", "../");
 
 // Create a random string and also mark its `result` property as a secret,
@@ -48,7 +128,7 @@ const sessionSecretRandomString = new random.RandomPassword("random", {
     length: 32,
 }, { additionalSecretOutputs: ["result"] });
 
-// Step 4: Create a Fargate service task that can scale out.
+// Create a Fargate service task that can scale out.
 const appService = new awsx.ecs.FargateService("app-svc", {
     cluster,
     taskDefinitionArgs: {
@@ -59,7 +139,8 @@ const appService = new awsx.ecs.FargateService("app-svc", {
             environment: [
                 { 
                     name: "HOST",
-                    value: pulumi.interpolate `https://${web.endpoint.hostname}`
+                    // The target domain which would concatenate with callbacks in main.go
+                    value: pulumi.interpolate `https://${cmsStackConfig.targetDomain}`
                 },
                 { 
                     name: "SESSION_SECRET",
@@ -67,11 +148,11 @@ const appService = new awsx.ecs.FargateService("app-svc", {
                 },
                 {
                     name: "GITHUB_KEY",
-                    value: githubKey
+                    value: cmsStackConfig.githubKey
                 },
                 {
                     name: "GITHUB_SECRET",
-                    value: githubSecret
+                    value: cmsStackConfig.githubSecret
                 }
             ]
         },
@@ -79,5 +160,31 @@ const appService = new awsx.ecs.FargateService("app-svc", {
     desiredCount: 1,
 });
 
-// Step 5: Export the Internet address for the service.
-export const url = web.endpoint.hostname;
+
+// ---- Create Alias Record ---- //
+
+// Creates a new Route53 DNS record pointing the domain to the CloudFront distribution.
+function createAliasRecord(
+    targetDomain: string, lb: awsx.elasticloadbalancingv2.ApplicationLoadBalancer): aws.route53.Record {
+    const domainParts = getDomainAndSubdomain(targetDomain);
+    const hostedZoneId = aws.route53.getZone({ name: domainParts.parentDomain }, { async: true }).then(zone => zone.zoneId);
+    return new aws.route53.Record(
+        targetDomain,
+        {
+            name: domainParts.subdomain,
+            zoneId: hostedZoneId,
+            type: "A",
+            aliases: [
+                {
+                    name: lb.loadBalancer.dnsName,
+                    zoneId: lb.loadBalancer.zoneId,
+                    evaluateTargetHealth: true,
+                },
+            ],
+        });
+}
+// Create the aliasRecord with targetdomain and application load balancer
+const aRecord = createAliasRecord(cmsStackConfig.targetDomain, alb);
+
+// Export the Internet address for the service.
+export const rawEndpointUrl = web.endpoint.hostname;
