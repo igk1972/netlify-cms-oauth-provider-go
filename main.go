@@ -127,6 +127,7 @@ func init() {
 	goth.UseProviders(
 		github.New(
 			os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"),
+			// concatenate with the host name
 			fmt.Sprintf("%s/callback/github", host),
 		),
 		bitbucket.New(
@@ -139,6 +140,7 @@ func init() {
 
 func main() {
 	router := pat.New()
+	//callack endpoints for github it's /callback/github
 	router.Get("/callback/{provider}", handleCallbackProvider)
 	router.Get("/auth/{provider}", handleAuthProvider)
 	router.Get("/auth", handleAuth)
@@ -149,5 +151,6 @@ func main() {
 	http.Handle("/", router)
 	//
 	fmt.Print("Started running on 80\n")
+	// listen on port 80 where we created the target group
 	fmt.Println(http.ListenAndServe(":80", nil))
 }
