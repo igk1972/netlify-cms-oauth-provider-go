@@ -3,7 +3,7 @@ This project is to provide an OAuth Provider Server for the [Pulumi's CMS projec
 
 Netlify-CMS oauth client sends token in form as Netlify service itself. This project is implementated in Go (golang), connected with AWS Fargate and configured AWS Route 53 domain and certification using Pulumi
 Here are some reference:
-- @igk1972's [OAuth provider](https://github.com/igk1972/netlify-cms-oauth-provider-go) for OAuth Provider and it's frontend
+- @igk1972 [OAuth provider](https://github.com/igk1972/netlify-cms-oauth-provider-go) for OAuth Provider and it's frontend
 - pulumi's [hello fargate example](https://github.com/pulumi/examples/tree/master/aws-ts-hello-fargate) for connecting to AWS Fargate to adopt Docker setting in cloud
 - pulumi's [static website example](https://github.com/pulumi/examples/tree/master/aws-ts-static-website) for configuring certificate and obtain a subdomain for the provider server
 
