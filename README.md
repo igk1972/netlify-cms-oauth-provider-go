@@ -82,7 +82,5 @@ $ yarn build
 ```
 and go to the infrastructure folder and do pulumi up to up date changes
 
-# ISSUE
-1. Currently it is rely on github application on Zephyr's Github account and pulumi-demos.net as domain.
 
 
