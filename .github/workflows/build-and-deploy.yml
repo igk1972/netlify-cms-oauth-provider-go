@@ -19,7 +19,7 @@ jobs:
           uses: pulumi/action-install-pulumi-cli@releases/v1
 
         - name: Install pulumi deps
-          uses: yarn install --cwd infrastructure
+          run: yarn install --cwd infrastructure
         
         - name: Preview infrastructure
           if: ${{ github.event_name == 'pull_request' }}
