@@ -1,7 +1,7 @@
 # About the Project
 This project is to provide an OAuth Provider Server for the [Pulumi's CMS project](https://github.com/pulumi/doc-cms). The CMS for Pulumi website is going to deploy on AWS rather than on Netlify. Netlify use the Netlify Identity Service which provides OAuth provider server. Based on [Netlify's instruction](https://www.netlifycms.org/docs/external-oauth-clients/) of customize this step we need to provide our own OAuth client.
 
-Netlify-CMS oauth client sends token in form as Netlify service itself. This project is implementated in Go (golang), connected with AWS Fargate and configured AWS Route 53 domain and certification using Pulumi
+The provider's content code is referencing to the [External OAuth Client example from Netlify CMS](https://www.netlifycms.org/docs/external-oauth-clients/). It is connected with AWS Fargate and configured AWS Route 53 domain and certification using Pulumi
 Here are some reference:
 - @igk1972 [OAuth provider](https://github.com/igk1972/netlify-cms-oauth-provider-go) for OAuth Provider and it's frontend
 - pulumi's [hello fargate example](https://github.com/pulumi/examples/tree/master/aws-ts-hello-fargate) for connecting to AWS Fargate to adopt Docker setting in cloud
@@ -66,14 +66,14 @@ $ pulumi up
 ### Step 4. Config CMS
 You also need to add `base_url` to the backend section of your netlify-cms's config file. 
 
-Go to the doc-cms repo which stores resource for CMS of Pulumi's website https://github.com/pulumi/doc-cms and on file public/config.yml add the base_url line with https://doc-cms-oauth.pulumi-demos.net
+Go to the doc-cms repo which stores resource for CMS of Pulumi's website https://github.com/pulumi/doc-cms and on file public/config.yml add the base_url line with the oauth provider url
 
 ```
 backend:
   name: github
   repo: user/repo   # Path to your Github repository
   branch: master    # Branch to update
-  base_url: https://doc-cms-oauth.pulumi-demos.net # Path to ext auth provider
+  base_url: https://xxx # Path to ext auth provider
 ```
 
 Then build use 
