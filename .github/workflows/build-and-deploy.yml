@@ -31,6 +31,7 @@ jobs:
           if: ${{ github.event_name == 'pull_request' }}
           run: pulumi preview --cwd infrastructure -s ${{ secrets.PULUMI_STACK }}
           env:
+            PULUMI_API: ${{ secrets.PULUMI_API }}
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   
         # Comment temporarily until AWS credential is updated
