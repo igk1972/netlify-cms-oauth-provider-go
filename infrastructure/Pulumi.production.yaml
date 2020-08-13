@@ -1,0 +1,4 @@
+config:
+  netlify-cms-oauth-provider-infrastructure:githubKey: 0f8478554537df026ff7
+  netlify-cms-oauth-provider-infrastructure:githubSecret:
+    secure: AAABAPhPS5c5JLm3mePfnYn9mMx6VLP6/0RelmkjIXl0frcxXqj2cOcNMeyPgGjfP7AhFo/+sDNS7UAgBEoVuXhH07Mpj+iO
