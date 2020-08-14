@@ -34,6 +34,10 @@ jobs:
               echo '::set-env name=AWS_SESSION_TOKEN::$AWS_SESSION_TOKEN'
         
         - name: Check assumed AWS token
+          env: 
+            AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+            AWS_SESSION_TOKEN: $AWS_SESSION_TOKEN
           run: |
             echo $AWS_ACCESS_KEY_ID
             echo $AWS_SECRET_ACCESS_KEY
@@ -43,6 +47,9 @@ jobs:
           if: ${{ github.event_name == 'pull_request' }}
           run: pulumi preview --cwd infrastructure -s "${{ secrets.PULUMI_STACK }}"
           env:
+            AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+            AWS_SESSION_TOKEN: $AWS_SESSION_TOKEN
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   
         # Comment temporarily until AWS credential is updated
