@@ -35,9 +35,9 @@ jobs:
         
         - name: Check assumed AWS token
           run: |
-            echo '$AWS_ACCESS_KEY_ID'
-            echo '$AWS_SECRET_ACCESS_KEY'
-            echo '$AWS_SESSION_TOKEN'
+            echo $AWS_ACCESS_KEY_ID
+            echo $AWS_SECRET_ACCESS_KEY
+            echo $AWS_SESSION_TOKEN
 
         - name: Preview infrastructure
           if: ${{ github.event_name == 'pull_request' }}
