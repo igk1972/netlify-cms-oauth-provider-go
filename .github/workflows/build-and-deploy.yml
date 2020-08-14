@@ -52,9 +52,6 @@ jobs:
             echo $AWS_SESSION_TOKEN 
             pulumi preview --cwd infrastructure -s "${{ secrets.PULUMI_STACK }}"
           env:
-            AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-            AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-            AWS_SESSION_TOKEN: $AWS_SESSION_TOKEN
             PULUMI_STACK: ${{ secrets.PULUMI_STACK}}
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   
