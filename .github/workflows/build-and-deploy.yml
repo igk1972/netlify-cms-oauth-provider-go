@@ -55,7 +55,7 @@ jobs:
             PULUMI_STACK: ${{ secrets.PULUMI_STACK}}
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   
-        # Comment temporarily until AWS credential is updated
+        # Comment temporarily until AWS credential is updated.
         # - name: Deploy infrastructure
         #   if: ${{ github.event_name == 'push' }}
         #   run: pulumi up --yes --cwd infrastructure -s ${{ secrets.PULUMI_STACK }}
