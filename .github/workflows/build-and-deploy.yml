@@ -30,9 +30,9 @@ jobs:
           run: |
               unset AWS_SESSION_TOKEN
               source ./scripts/assume-role.sh; assume_iam_role "${{secrets.IAM_ROLE_ARN}}" "cmsOAuthSession" "${{secrets.EXTERNAL_ID}}"
-              echo '::set-env name=AWS_ACCESS_KEY_ID::' $AWS_ACCESS_KEY_ID
-              echo '::set-env name=AWS_SECRET_ACCESS_KEY::' $AWS_SECRET_ACCESS_KEY
-              echo '::set-env name=AWS_SESSION_TOKEN::' $AWS_SESSION_TOKEN
+              echo '::set-env name=AWS_ACCESS_KEY_ID::'$AWS_ACCESS_KEY_ID
+              echo '::set-env name=AWS_SECRET_ACCESS_KEY::'$AWS_SECRET_ACCESS_KEY
+              echo '::set-env name=AWS_SESSION_TOKEN::'$AWS_SESSION_TOKEN
               echo 'after2'
               echo $AWS_ACCESS_KEY_ID
               echo $AWS_SECRET_ACCESS_KEY
