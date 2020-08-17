@@ -47,4 +47,4 @@ jobs:
           env:
             PULUMI_STACK: ${{ secrets.PULUMI_STACK}}
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          run: pulumi up --yes --cwd infrastructure -s ${{ secrets.PULUMI_STACK }}
+          run: pulumi up --yes --cwd infrastructure -s "${{ secrets.PULUMI_STACK }}"
