@@ -23,7 +23,7 @@ const eastRegion = new aws.Provider("east", {
     region: "us-east-1", // Per AWS, ACM certificate must be in the us-east-1 region.
 });
 
-// Creating a Certificate for the given domain
+// Creating a Certificate for the given domain.
 const certificate = new aws.acm.Certificate("certificate", {
     domainName: cmsStackConfig.targetDomain,
     validationMethod: "DNS",
