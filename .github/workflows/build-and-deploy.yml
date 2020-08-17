@@ -36,15 +36,15 @@ jobs:
   
         - name: Preview infrastructure
           if: ${{ github.event_name == 'pull_request' }}
-          run: |
-            pulumi preview --cwd infrastructure -s "${{ secrets.PULUMI_STACK }}"
           env:
             PULUMI_STACK: ${{ secrets.PULUMI_STACK}}
             PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-  
-        # Comment temporarily until AWS credential is updated.
-        # - name: Deploy infrastructure
-        #   if: ${{ github.event_name == 'push' }}
-        #   run: pulumi up --yes --cwd infrastructure -s ${{ secrets.PULUMI_STACK }}
-        #   env:
-        #     PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          run:
+            pulumi preview --cwd infrastructure -s "${{ secrets.PULUMI_STACK }}"
+        
+        - name: Deploy infrastructure
+          if: ${{ github.event_name == 'push' }}
+          env:
+            PULUMI_STACK: ${{ secrets.PULUMI_STACK}}
+            PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          run: pulumi up --yes --cwd infrastructure -s ${{ secrets.PULUMI_STACK }}
