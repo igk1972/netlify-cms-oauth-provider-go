@@ -16,5 +16,11 @@ build-linux:
 build-windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -ldflags "$(LDFLAGS)" -o bin/$(TARGET_BIN)_windows-amd64.exe $(SOURCE_MAIN)
 
+build-linux-noarch:
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(LDFLAGS)" -o bin/$(TARGET_BIN) $(SOURCE_MAIN)
+
+docker-build:
+	docker build -t rubemlrm/netlify-cms-auth-provider:latest .
+
 start:
 	go run $(SOURCE_MAIN)
