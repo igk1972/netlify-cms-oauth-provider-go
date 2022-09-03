@@ -1,13 +1,18 @@
-name: Build
+name: Releaser
 
 on:
   release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 env:
   VERSION: ${{ github.event.release.tag_name }}
 
 jobs:
-  build-and-push-docker-image:
+  release-docker-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
