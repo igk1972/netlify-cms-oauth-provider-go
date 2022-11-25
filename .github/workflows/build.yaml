@@ -34,7 +34,7 @@ jobs:
           push: true
           tags: "rubemlrm/netlify-cms-auth-provider:${{ env.VERSION }}"
           labels: ${{ env.VERSION }}
-          platforms: linux/arm/v7,linux/arm64
+          platforms: linux/arm/v7,linux/arm64,linux/amd64
   release-app:
     runs-on: ubuntu-latest
     permissions:
