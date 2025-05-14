@@ -1,9 +1,11 @@
 .DS_Store
 Thumbs.db
 
+/.vscode
 /.idea
 /.env*
 
+/dist
 /bin
 /node_modules
 /tmp
