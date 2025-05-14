@@ -5,10 +5,9 @@
 [![Downloads](https://img.shields.io/github/downloads/igk1972/netlify-cms-oauth-provider-go/latest/total.svg)](https://github.com/igk1972/netlify-cms-oauth-provider-go/releases)
 [![Latest release](https://img.shields.io/github/release/igk1972/netlify-cms-oauth-provider-go.svg)](https://github.com/igk1972/netlify-cms-oauth-provider-go/releases)
 
-Netlify-CMS oauth client sending token in form as Netlify service itself, implementation in Go (golang) 
+Netlify/Decup-cms oauth provider for CMS oauth client sending token in form as Netlify service itself, implementation in Go (golang)
 
 inspired by [netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider) (node-js). Thanks Václav!
-
 
 ## 1) Install
 
@@ -27,11 +26,11 @@ wget -O - -q https://raw.githubusercontent.com/igk1972/netlify-cms-oauth-provide
 
 ### Auth Provider Config
 
-Configuration is done with environment variables, which can be supplied as command line arguments, added in your app  hosting interface, or loaded from a .env ([dotenv](https://github.com/motdotla/dotenv)) file.
+Configuration is done with environment variables, which can be supplied as command line arguments, added in your app  hosting interface, or loaded from a .env ([godotenv](https://github.com/joho/godotenv)) file.
 
 **Example .env file:**
 
-```
+```sh
 HOST=localhost:3000
 CALLBACK_HOST=localhost:3000
 SESSION_SECRET=your-random-string
@@ -49,9 +48,10 @@ GITEA_SECRET=
 After registering your Oauth app, you will be able to get your client id and client secret on the next page.
 
 ### CMS Config
-You also need to add `base_url` to the backend section of your netlify-cms's config file. `base_url` is the live URL of this repo with no trailing slashes.
 
-```
+You also need to add `base_url` to the backend section of your netlify/decup-cms's config file. `base_url` is the live URL of this repo with no trailing slashes.
+
+```yaml
 backend:
   name: github
   repo: user/repo   # Path to your Github repository
