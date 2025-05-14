@@ -47,13 +47,13 @@ const (
       "authorizing:" + provider,
       "*"
     );
-  })("%s", "%s", %s)
+  })("%s", "%s", "%s")
   </script></head><body></body></html>`
 )
 
 // GET /
 func handleMain(res http.ResponseWriter, req *http.Request) {
-	log.Printf("handling root route '%s'\n", req)
+	log.Printf("handling root route '%s'\n", req.RequestURI)
 	res.Header().Set("Content-Type", "text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(``))
@@ -99,13 +99,13 @@ func handleCallbackProvider(res http.ResponseWriter, req *http.Request) {
 
 // GET /refresh
 func handleRefresh(res http.ResponseWriter, req *http.Request) {
-	log.Printf("refresh with '%s'\n", req)
+	log.Printf("refresh with '%s'\n", req.RequestURI)
 	res.Write([]byte(""))
 }
 
 // GET /success
 func handleSuccess(res http.ResponseWriter, req *http.Request) {
-	log.Printf("success with '%s'\n", req)
+	log.Printf("success with '%s'\n", req.RequestURI)
 	res.Write([]byte(""))
 }
 
@@ -121,7 +121,7 @@ func init() {
 		callbackHost = callbackEnv
 	}
 
-  var (
+	var (
 		giteaProvider goth.Provider
 	)
 	if giteaServer, ok := os.LookupEnv("GITEA_SERVER"); ok {
@@ -135,7 +135,7 @@ func init() {
 	} else {
 		giteaProvider = gitea.New(
 			os.Getenv("GITEA_KEY"), os.Getenv("GITEA_SECRET"),
-			fmt.Sprintf("https://%s/callback/gitea", host),
+			fmt.Sprintf("https://%s/callback/gitea", callbackHost),
 		)
 	}
 
