@@ -9,10 +9,11 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/bitbucket"
+	"github.com/markbates/goth/providers/gitea"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/gitlab"
 
-	"./dotenv"
+	"github.com/igk1972/netlify-cms-oauth-provider-go/dotenv"
 )
 
 var (
@@ -110,6 +111,24 @@ func init() {
 		host = hostEnv
 	}
 	var (
+		giteaProvider goth.Provider
+	)
+	if giteaServer, ok := os.LookupEnv("GITEA_SERVER"); ok {
+		giteaProvider = gitea.NewCustomisedURL(
+			os.Getenv("GITEA_KEY"), os.Getenv("GITEA_SECRET"),
+			fmt.Sprintf("https://%s/callback/gitea", host),
+			fmt.Sprintf("https://%s/login/oauth/authorize", giteaServer),
+			fmt.Sprintf("https://%s/login/oauth/access_token", giteaServer),
+			fmt.Sprintf("https://%s/api/v1/user", giteaServer),
+		)
+	} else {
+		giteaProvider = gitea.New(
+			os.Getenv("GITEA_KEY"), os.Getenv("GITEA_SECRET"),
+			fmt.Sprintf("https://%s/callback/gitea", host),
+		)
+	}
+
+	var (
 		gitlabProvider goth.Provider
 	)
 	if gitlabServer, ok := os.LookupEnv("GITLAB_SERVER"); ok {
@@ -126,6 +145,7 @@ func init() {
 			fmt.Sprintf("https://%s/callback/gitlab", host),
 		)
 	}
+
 	goth.UseProviders(
 		github.New(
 			os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"),
@@ -136,6 +156,7 @@ func init() {
 			fmt.Sprintf("https://%s/callback//bitbucket", host),
 		),
 		gitlabProvider,
+		giteaProvider,
 	)
 }
 
